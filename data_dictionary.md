@@ -1,100 +1,99 @@
-# Bluestock Mutual Fund Data Dictionary
+# Data Dictionary: Bluestock MF Capstone
 
-This document outlines the data structure for the SQLite Star Schema (`bluestock_mf.db`) generated for the Mutual Fund Analysis project.
+This document defines the variables and tables populated in `bluestock_mf.db`.
 
-## Database Overview
-- **Database**: SQLite (`bluestock_mf.db`)
-- **Design**: Star Schema
-- **Fact Tables**: `fact_nav`, `fact_transactions`, `fact_performance`, `fact_aum`, `fact_dividend`
-- **Dimension Tables**: `dim_fund`, `dim_date`, `dim_investor`, `dim_distributor`, `dim_market_index`, `dim_fund_manager`
+## 1. dim_fund
+Dimension table storing fund metadata.
+- **amfi_code** (INTEGER): Primary Key. AMFI unique scheme code.
+- **fund_house** (TEXT): AMC name.
+- **scheme_name** (TEXT): Full scheme name.
+- **category** (TEXT): Equity / Debt / Hybrid.
+- **sub_category** (TEXT): Large Cap, Mid Cap, etc.
+- **plan** (TEXT): Regular or Direct.
+- **launch_date** (DATE): Scheme launch date.
+- **benchmark** (TEXT): Official benchmark index.
+- **expense_ratio_pct** (REAL): Annual expense ratio.
+- **exit_load_pct** (REAL): Exit load percentage.
+- **min_sip_amount** (INTEGER): Minimum SIP amount allowed.
+- **min_lumpsum_amount** (INTEGER): Minimum Lumpsum amount allowed.
+- **fund_manager** (TEXT): Name of primary manager.
+- **risk_category** (TEXT): SEBI risk category.
+- **sebi_category_code** (TEXT): Internal category code.
 
----
+## 2. fact_nav
+Fact table containing daily NAV history.
+- **amfi_code** (INTEGER): Foreign Key to dim_fund.
+- **date** (DATE): NAV Date.
+- **nav** (REAL): Net Asset Value in INR.
 
-## Dimension Tables
+## 3. fact_transactions
+Fact table containing individual investor transactions.
+- **investor_id** (TEXT): Unique investor ID.
+- **transaction_date** (DATE): Date of transaction.
+- **amfi_code** (INTEGER): Foreign Key to dim_fund.
+- **transaction_type** (TEXT): Sip, Lumpsum, or Redemption.
+- **amount_inr** (INTEGER): Transaction amount.
+- **state** (TEXT): Investor state.
+- **city** (TEXT): Investor city.
+- **city_tier** (TEXT): T30 or B30 classification.
+- **age_group** (TEXT): Age bracket.
+- **gender** (TEXT): Male/Female.
+- **annual_income_lakh** (REAL): Annual income.
+- **payment_mode** (TEXT): UPI, Cheque, Net Banking, etc.
+- **kyc_status** (TEXT): Verified/Pending.
 
-### `dim_fund`
-Master table of mutual fund schemes.
-- `scheme_code` (INTEGER): **PRIMARY KEY**. Unique AMFI identifier for the scheme.
-- `scheme_name` (TEXT): Full name of the mutual fund scheme.
-- `fund_house` (TEXT): The Asset Management Company (AMC) managing the fund.
-- `scheme_type` (TEXT): Type of scheme (e.g., Open Ended).
-- `scheme_category` (TEXT): Category of the fund (e.g., Equity Scheme - Large Cap Fund).
-- `isin_growth` (TEXT): ISIN number for the Growth plan.
-- `isin_div_reinvestment` (TEXT): ISIN number for Dividend Reinvestment plan.
+## 4. fact_performance
+Fact table summarizing historical performance and risk metrics.
+- **amfi_code** (INTEGER): Foreign Key to dim_fund.
+- **scheme_name** (TEXT): Scheme Name.
+- **fund_house** (TEXT): AMC.
+- **category** (TEXT): Scheme Category.
+- **plan** (TEXT): Scheme Plan.
+- **return_1yr_pct** (REAL): 1-year trailing return.
+- **return_3yr_pct** (REAL): 3-year trailing return.
+- **return_5yr_pct** (REAL): 5-year trailing return.
+- **benchmark_3yr_pct** (REAL): 3-year benchmark return.
+- **alpha** (REAL): Alpha vs Benchmark.
+- **beta** (REAL): Beta vs Benchmark.
+- **sharpe_ratio** (REAL): Risk-adjusted return metric.
+- **sortino_ratio** (REAL): Downside risk-adjusted metric.
+- **std_dev_ann_pct** (REAL): Annualized volatility.
+- **max_drawdown_pct** (REAL): Maximum drawdown.
+- **aum_crore** (INTEGER): Current AUM in Crores.
+- **expense_ratio_pct** (REAL): Expense Ratio.
+- **morningstar_rating** (INTEGER): Star rating.
+- **risk_grade** (TEXT): Risk Grade.
 
-### `dim_date`
-Master calendar dimension table.
-- `date` (TEXT): **PRIMARY KEY**. Format YYYY-MM-DD.
-- `year` (INTEGER): 4-digit year.
-- `month` (INTEGER): Month number (1-12).
-- `day` (INTEGER): Day of the month.
-- `quarter` (INTEGER): Quarter of the year (1-4).
-- `day_of_week` (INTEGER): Day of the week (0=Monday, 6=Sunday).
-- `is_weekend` (BOOLEAN): True if Saturday/Sunday.
+## 5. fact_aum
+Fact table tracking quarterly AUM totals per fund house.
+- **date** (DATE): Snapshot date.
+- **fund_house** (TEXT): AMC name.
+- **aum_lakh_crore** (REAL): AUM in Lakh Crores.
+- **aum_crore** (INTEGER): AUM in Crores.
+- **num_schemes** (INTEGER): Total active schemes.
 
-### `dim_investor`
-Metadata about investors.
-- `investor_id` (TEXT): **PRIMARY KEY**. Unique identifier for the investor.
-- `age` (INTEGER): Age of the investor.
+## 6. fact_sip_industry
+Fact table tracking macro SIP inflows into the MF industry.
+- **month** (TEXT): YYYY-MM.
+- **sip_inflow_crore** (INTEGER): Total SIP inflow.
+- **active_sip_accounts_crore** (REAL): Number of active accounts.
+- **new_sip_accounts_lakh** (REAL): New account registrations.
+- **sip_aum_lakh_crore** (REAL): Total SIP AUM.
+- **yoy_growth_pct** (REAL): YoY growth.
 
-### `dim_distributor`
-Platform or distributor entities.
-- `dist_id` (TEXT): **PRIMARY KEY**. Unique identifier for the distributor.
-- `name` (TEXT): Name of the distributor (e.g., Zerodha, Groww).
+## 7. fact_portfolio
+Fact table tracking equity portfolio allocations per scheme.
+- **amfi_code** (INTEGER): Foreign Key to dim_fund.
+- **stock_symbol** (TEXT): Ticker symbol.
+- **stock_name** (TEXT): Company Name.
+- **sector** (TEXT): Industry Sector.
+- **weight_pct** (REAL): Portfolio Weight %.
+- **market_value_cr** (REAL): Absolute Market Value (Cr).
+- **current_price_inr** (REAL): Stock Price.
+- **portfolio_date** (DATE): Snapshot Date.
 
-### `dim_market_index`
-Market indices mapped for benchmarks.
-- `index_code` (TEXT): **PRIMARY KEY**. Short code for index (e.g., NIFTY50).
-- `name` (TEXT): Full name of the index.
-
-### `dim_fund_manager`
-Managers running the funds.
-- `manager_id` (INTEGER): **PRIMARY KEY**. Auto-increment ID.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `manager` (TEXT): Name of the fund manager.
-
----
-
-## Fact Tables
-
-### `fact_nav`
-Daily Net Asset Value history.
-- `nav_id` (INTEGER): **PRIMARY KEY**. Auto-increment ID.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `date` (TEXT): **FOREIGN KEY**. References `dim_date(date)`.
-- `nav` (REAL): Net Asset Value on the given date. Missing holidays/weekends are forward-filled.
-
-### `fact_transactions`
-Records of investor inflows/outflows.
-- `transaction_id` (TEXT): **PRIMARY KEY**. Unique transaction identifier.
-- `investor_id` (TEXT): **FOREIGN KEY**. References `dim_investor(investor_id)`.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `date` (TEXT): **FOREIGN KEY**. References `dim_date(date)`.
-- `transaction_type` (TEXT): Standardized type (`SIP`, `LUMPSUM`, `REDEMPTION`).
-- `amount` (REAL): Transaction volume in currency.
-- `state` (TEXT): Origin state of the transaction.
-- `kyc_status` (TEXT): Enum of investor KYC state (`VERIFIED`, `PENDING`, `REJECTED`).
-
-### `fact_performance`
-Periodic performance metrics and expense ratios.
-- `performance_id` (INTEGER): **PRIMARY KEY**. Auto-increment ID.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `as_of_date` (TEXT): **FOREIGN KEY**. References `dim_date(date)`.
-- `return_1y` (REAL): 1-year trailing percentage return.
-- `return_3y` (REAL): 3-year trailing percentage return.
-- `return_5y` (REAL): 5-year trailing percentage return.
-- `expense_ratio` (REAL): Total Expense Ratio (TER) in percentage (valid range 0.1% - 2.5%).
-- `is_anomaly` (BOOLEAN): True if any return metric exceeded 100%.
-
-### `fact_aum`
-Assets Under Management records.
-- `aum_id` (INTEGER): **PRIMARY KEY**. Auto-increment ID.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `as_of_date` (TEXT): **FOREIGN KEY**. References `dim_date(date)`.
-- `aum_cr` (REAL): Asset Under Management in Crores.
-
-### `fact_dividend`
-Historical dividend distributions.
-- `dividend_id` (INTEGER): **PRIMARY KEY**. Auto-increment ID.
-- `scheme_code` (INTEGER): **FOREIGN KEY**. References `dim_fund(scheme_code)`.
-- `dividend` (REAL): Dividend amount distributed.
+## 8. dim_date / fact_benchmark
+Dimension table for dates and benchmark performance tracking.
+- **date** (DATE): Date key.
+- **index_name** (TEXT): e.g. NIFTY50.
+- **close_value** (REAL): Daily closing level.

@@ -1,72 +1,88 @@
 import pandas as pd
-import numpy as np
 import os
+import shutil
+import glob
 
-def clean_data():
-    os.makedirs('data/processed', exist_ok=True)
+RAW_DIR = "data/raw"
+PROC_DIR = "data/processed"
+
+def clean_nav_history():
+    print("Cleaning nav_history...")
+    df = pd.read_csv(os.path.join(RAW_DIR, "02_nav_history.csv"))
     
-    # 1. nav_history.csv
-    print("Cleaning nav_history.csv...")
-    nav = pd.read_csv('data/raw/nav_history.csv')
-    nav['date'] = pd.to_datetime(nav['date'], format='%d-%m-%Y', errors='coerce')
-    nav = nav.dropna(subset=['date'])
-    nav['nav'] = pd.to_numeric(nav['nav'], errors='coerce')
-    nav = nav[nav['nav'] > 0] # validate NAV > 0
-    nav = nav.drop_duplicates(subset=['scheme_code', 'date'])
-    nav = nav.sort_values(by=['scheme_code', 'date'])
+    # Parse dates
+    df['date'] = pd.to_datetime(df['date'])
     
-    # forward-fill missing NAV for holidays/weekends
-    # Create a complete date range per scheme code
-    all_dates = pd.date_range(start=nav['date'].min(), end=nav['date'].max(), freq='D')
-    nav_filled = []
-    for code, group in nav.groupby('scheme_code'):
-        group = group.set_index('date').reindex(all_dates)
-        group['scheme_code'] = code
-        group['nav'] = group['nav'].ffill()
-        group = group.dropna(subset=['nav'])
-        group = group.reset_index().rename(columns={'index': 'date'})
-        nav_filled.append(group)
-    nav_clean = pd.concat(nav_filled, ignore_index=True)
-    nav_clean.to_csv('data/processed/nav_history.csv', index=False)
+    # Remove duplicates
+    df = df.drop_duplicates(subset=['amfi_code', 'date'])
     
-    # 2. investor_transactions.csv
-    print("Cleaning investor_transactions.csv...")
-    txn = pd.read_csv('data/raw/investor_transactions.csv')
-    # Standardise transaction_type
-    txn['transaction_type'] = txn['transaction_type'].str.upper().replace({'LUMP': 'LUMPSUM'})
-    valid_txns = ['SIP', 'LUMPSUM', 'REDEMPTION']
-    txn = txn[txn['transaction_type'].isin(valid_txns)]
+    # Validate NAV > 0
+    df = df[df['nav'] > 0]
+    
+    # Forward-fill missing dates for each amfi_code
+    # Group by amfi_code, reindex to daily, ffill
+    min_date = df['date'].min()
+    max_date = df['date'].max()
+    all_dates = pd.date_range(start=min_date, end=max_date, freq='D')
+    
+    df = df.set_index('date')
+    df_clean = df.groupby('amfi_code')['nav'].apply(
+        lambda x: x.reindex(all_dates).ffill()
+    ).reset_index()
+    
+    df_clean.rename(columns={'level_1': 'date'}, inplace=True)
+    df_clean['date'] = df_clean['date'].dt.strftime('%Y-%m-%d')
+    
+    df_clean.to_csv(os.path.join(PROC_DIR, "02_nav_history.csv"), index=False)
+    print(f"nav_history cleaned: {len(df_clean)} rows.")
+
+def clean_investor_transactions():
+    print("Cleaning investor_transactions...")
+    df = pd.read_csv(os.path.join(RAW_DIR, "08_investor_transactions.csv"))
+    
+    # Parse dates
+    df['transaction_date'] = pd.to_datetime(df['transaction_date']).dt.strftime('%Y-%m-%d')
+    
     # Validate amount > 0
-    txn = txn[txn['amount'] > 0]
-    # Fix date formats
-    txn['date'] = pd.to_datetime(txn['date'], errors='coerce').dt.strftime('%Y-%m-%d')
-    txn = txn.dropna(subset=['date'])
-    # KYC status enum values
-    txn['kyc_status'] = txn['kyc_status'].str.upper()
-    valid_kyc = ['VERIFIED', 'PENDING', 'REJECTED']
-    txn = txn[txn['kyc_status'].isin(valid_kyc)]
-    txn.to_csv('data/processed/investor_transactions.csv', index=False)
+    df = df[df['amount_inr'] > 0]
     
-    # 3. scheme_performance.csv
-    print("Cleaning scheme_performance.csv...")
-    perf = pd.read_csv('data/raw/scheme_performance.csv')
-    perf['1y_return'] = pd.to_numeric(perf['1y_return'], errors='coerce')
-    perf['3y_return'] = pd.to_numeric(perf['3y_return'], errors='coerce')
-    perf['5y_return'] = pd.to_numeric(perf['5y_return'], errors='coerce')
+    # Standardize transaction types
+    df['transaction_type'] = df['transaction_type'].str.title().str.strip()
     
-    # Flag anomalies > 100%
-    perf['is_anomaly'] = (perf['1y_return'] > 100) | (perf['3y_return'] > 100) | (perf['5y_return'] > 100)
+    # Filter valid KYC statuses
+    df = df[df['kyc_status'].isin(['Verified', 'Pending'])]
     
-    # Check expense_ratio range (0.1% - 2.5%)
-    perf = perf[(perf['expense_ratio'] >= 0.1) & (perf['expense_ratio'] <= 2.5)]
-    perf.to_csv('data/processed/scheme_performance.csv', index=False)
+    df.to_csv(os.path.join(PROC_DIR, "08_investor_transactions.csv"), index=False)
+    print(f"investor_transactions cleaned: {len(df)} rows.")
+
+def clean_scheme_performance():
+    print("Cleaning scheme_performance...")
+    df = pd.read_csv(os.path.join(RAW_DIR, "07_scheme_performance.csv"))
     
-    # Pass-through other datasets to processed
-    print("Processing other datasets...")
-    for filename in ['fund_master.csv', 'aum.csv', 'investors.csv', 'distributors.csv', 'market_indices.csv', 'fund_managers.csv', 'dividends.csv']:
-        df = pd.read_csv(f'data/raw/{filename}')
-        df.to_csv(f'data/processed/{filename}', index=False)
+    # Return values should be numeric, coerce errors
+    num_cols = ['return_1yr_pct', 'return_3yr_pct', 'return_5yr_pct']
+    for col in num_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
         
+    # Filter valid expense ratios (0.1 to 2.5)
+    df = df[(df['expense_ratio_pct'] >= 0.1) & (df['expense_ratio_pct'] <= 2.5)]
+    
+    df.to_csv(os.path.join(PROC_DIR, "07_scheme_performance.csv"), index=False)
+    print(f"scheme_performance cleaned: {len(df)} rows.")
+
+def process_other_files():
+    all_raw = set(os.path.basename(f) for f in glob.glob(os.path.join(RAW_DIR, "*.csv")))
+    cleaned = {'02_nav_history.csv', '08_investor_transactions.csv', '07_scheme_performance.csv'}
+    to_copy = all_raw - cleaned
+    
+    for f in to_copy:
+        shutil.copy(os.path.join(RAW_DIR, f), os.path.join(PROC_DIR, f))
+        print(f"Copied {f} to processed.")
+
 if __name__ == "__main__":
-    clean_data()
-    print("Data cleaning complete.")
+    os.makedirs(PROC_DIR, exist_ok=True)
+    clean_nav_history()
+    clean_investor_transactions()
+    clean_scheme_performance()
+    process_other_files()
+    print("--- Data Cleaning Complete ---")

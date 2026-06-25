@@ -1,93 +1,78 @@
 import pandas as pd
+from sqlalchemy import create_engine
 import sqlite3
 import os
-from sqlalchemy import create_engine, text
 
-def load_db():
-    engine = create_engine('sqlite:///bluestock_mf.db')
-    
-    # 1. Run schema.sql first
-    with sqlite3.connect('bluestock_mf.db') as conn:
-        with open('schema.sql', 'r') as f:
-            conn.executescript(f.read())
-            
-    print("Schema created successfully.")
+DB_PATH = "bluestock_mf.db"
+PROC_DIR = "data/processed"
 
-    # 2. Load dimension: dim_fund
-    fund_master = pd.read_csv('data/processed/fund_master.csv')
-    fund_master.to_sql('dim_fund', engine, if_exists='append', index=False)
+def init_db():
+    print("Initializing Database with schema.sql...")
+    conn = sqlite3.connect(DB_PATH)
+    with open('schema.sql', 'r') as f:
+        conn.executescript(f.read())
+    conn.close()
+
+def load_data():
+    engine = create_engine(f"sqlite:///{DB_PATH}")
     
-    # 3. Load facts
-    # nav_history
-    nav = pd.read_csv('data/processed/nav_history.csv')
-    # Generate dim_date dynamically from all dates across datasets
-    dates = pd.to_datetime(nav['date'].unique())
-    txn = pd.read_csv('data/processed/investor_transactions.csv')
-    dates = dates.union(pd.to_datetime(txn['date'].unique()))
-    perf = pd.read_csv('data/processed/scheme_performance.csv')
-    dates = dates.union(pd.to_datetime(perf['as_of_date'].unique()))
-    aum = pd.read_csv('data/processed/aum.csv')
-    dates = dates.union(pd.to_datetime(aum['as_of_date'].unique()))
+    file_mapping = {
+        "01_fund_master.csv": "dim_fund",
+        "02_nav_history.csv": "fact_nav",
+        "03_aum_by_fund_house.csv": "fact_aum",
+        "04_monthly_sip_inflows.csv": "fact_sip_industry",
+        "07_scheme_performance.csv": "fact_performance",
+        "08_investor_transactions.csv": "fact_transactions",
+        "09_portfolio_holdings.csv": "fact_portfolio",
+    }
     
+    for filename, table_name in file_mapping.items():
+        filepath = os.path.join(PROC_DIR, filename)
+        if os.path.exists(filepath):
+            print(f"Loading {filename} into {table_name}...")
+            df = pd.read_csv(filepath)
+            df.to_sql(table_name, engine, if_exists='append', index=False)
+            print(f"  Loaded {len(df)} rows.")
+        else:
+            print(f"Warning: {filepath} not found.")
+
+    # Generate dim_date dynamically
+    print("Generating dim_date...")
+    dates = pd.date_range(start='2022-01-01', end='2026-12-31')
     dim_date = pd.DataFrame({
+        'date_id': range(1, len(dates) + 1),
         'date': dates.strftime('%Y-%m-%d'),
         'year': dates.year,
         'month': dates.month,
-        'day': dates.day,
         'quarter': dates.quarter,
-        'day_of_week': dates.dayofweek,
-        'is_weekend': dates.dayofweek >= 5
-    }).drop_duplicates()
-    dim_date.to_sql('dim_date', engine, if_exists='append', index=False)
-    
-    nav.to_sql('fact_nav', engine, if_exists='append', index=False)
-    
-    txn.to_sql('fact_transactions', engine, if_exists='append', index=False)
-    
-    perf = perf.rename(columns={'1y_return': 'return_1y', '3y_return': 'return_3y', '5y_return': 'return_5y'})
-    perf.to_sql('fact_performance', engine, if_exists='append', index=False)
-    
-    aum.to_sql('fact_aum', engine, if_exists='append', index=False)
-    
-    # other dims
-    investors = pd.read_csv('data/processed/investors.csv')
-    investors.to_sql('dim_investor', engine, if_exists='append', index=False)
-    
-    distributors = pd.read_csv('data/processed/distributors.csv')
-    distributors.to_sql('dim_distributor', engine, if_exists='append', index=False)
-    
-    indices = pd.read_csv('data/processed/market_indices.csv')
-    indices.to_sql('dim_market_index', engine, if_exists='append', index=False)
-    
-    mgrs = pd.read_csv('data/processed/fund_managers.csv')
-    mgrs.to_sql('dim_fund_manager', engine, if_exists='append', index=False)
-    
-    divs = pd.read_csv('data/processed/dividends.csv')
-    divs.to_sql('fact_dividend', engine, if_exists='append', index=False)
-    
-    # 4. Verify row counts
+        'is_weekday': dates.weekday < 5
+    })
+    dim_date.to_sql('dim_date', engine, if_exists='replace', index=False)
+    print(f"  Loaded {len(dim_date)} rows.")
+
+    # Load benchmarks
+    filepath = os.path.join(PROC_DIR, "10_benchmark_indices.csv")
+    if os.path.exists(filepath):
+        print(f"Loading 10_benchmark_indices.csv into fact_benchmark...")
+        df = pd.read_csv(filepath)
+        df.to_sql('fact_benchmark', engine, if_exists='replace', index=False)
+        print(f"  Loaded {len(df)} rows.")
+
+def verify_counts():
     print("\n--- Row Count Verification ---")
-    tables = {
-        'dim_fund': len(fund_master),
-        'fact_nav': len(nav),
-        'fact_transactions': len(txn),
-        'fact_performance': len(perf),
-        'fact_aum': len(aum),
-        'dim_investor': len(investors),
-        'dim_distributor': len(distributors),
-        'dim_market_index': len(indices),
-        'dim_fund_manager': len(mgrs),
-        'fact_dividend': len(divs)
-    }
-    
-    with engine.connect() as connection:
-        for table, expected in tables.items():
-            result = connection.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-            status = "OK" if result == expected else f"MISMATCH (Expected: {expected}, Got: {result})"
-            print(f"{table}: {status}")
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+    for table in tables:
+        tname = table[0]
+        cursor.execute(f"SELECT COUNT(*) FROM {tname}")
+        count = cursor.fetchone()[0]
+        print(f"Table '{tname}': {count} rows")
+    conn.close()
 
 if __name__ == "__main__":
-    if os.path.exists('bluestock_mf.db'):
-        os.remove('bluestock_mf.db')
-    load_db()
-    print("\nDatabase load complete.")
+    init_db()
+    load_data()
+    verify_counts()
+    print("--- Database Load Complete ---")
