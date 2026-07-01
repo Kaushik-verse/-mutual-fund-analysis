@@ -31,17 +31,25 @@ The project utilizes 10 core datasets containing simulated but highly realistic 
 │   ├── raw/               # Original CSV files ingested during Day 1
 │   └── processed/         # Cleaned, standardized CSVs ready for DB load
 ├── notebooks/
-│   └── EDA_Analysis.ipynb # Jupyter notebook containing 10+ Plotly/Seaborn charts
+│   ├── EDA_Analysis.ipynb         # 10+ Plotly/Seaborn charts
+│   └── Performance_Analytics.ipynb# Risk models and Fund Scorecards
+│   └── Advanced_Analytics.ipynb   # VaR, Cohort Analysis, HHI
 ├── reports/
-│   └── charts/            # High-resolution PNG exports of EDA charts
+│   ├── charts/                    # PNG exports of all visualizations
+│   └── data/                      # CSV exports (scorecard, var, etc.)
+├── dashboard/
+│   └── app.py                     # Streamlit Interactive Dashboard
 ├── sql/
-│   ├── schema.sql         # DDL statements for the 5-table Star Schema
-│   └── queries.sql        # 10 complex analytical SQL queries
-├── data_ingestion.py      # Script to ingest raw datasets
-├── clean_data.py          # ETL script to clean datasets (forward-fills, validation)
-├── db_load.py             # SQLAlchemy script to map processed CSVs into SQLite
-├── data_dictionary.md     # Comprehensive database schema documentation
-└── requirements.txt       # Python dependencies
+│   ├── schema.sql                 # DDL statements for the 5-table Star Schema
+│   └── queries.sql                # 10 complex analytical SQL queries
+├── data_ingestion.py              # Script to ingest raw datasets
+├── clean_data.py                  # ETL script to clean datasets
+├── db_load.py                     # SQLAlchemy script to map processed CSVs to SQLite
+├── generate_day4.py               # Notebook generator for Day 4
+├── generate_day6.py               # Notebook generator for Day 6
+├── recommender.py                 # CLI Fund Recommender
+├── data_dictionary.md             # Database schema documentation
+└── requirements.txt               # Python dependencies
 ```
 
 ## Setup & Installation
@@ -88,6 +96,26 @@ The project utilizes 10 core datasets containing simulated but highly realistic 
    Launch Jupyter Notebook to view the charts:
    ```bash
    jupyter notebook notebooks/EDA_Analysis.ipynb
+   ```
+
+5. **Day 4: Fund Performance Analytics**
+   ```bash
+   jupyter notebook notebooks/Performance_Analytics.ipynb
+   ```
+
+6. **Day 5: Interactive Dashboard Deployment**
+   Launch the Streamlit web dashboard:
+   ```bash
+   streamlit run dashboard/app.py
+   ```
+
+7. **Day 6: Advanced Analytics & Models**
+   ```bash
+   jupyter notebook notebooks/Advanced_Analytics.ipynb
+   ```
+   Run the CLI Fund Recommender:
+   ```bash
+   python recommender.py
    ```
 
 ## Technologies Used
