@@ -1,5 +1,7 @@
 # Bluestock Mutual Fund Analytics Platform
 
+**Author:** Kaushik
+
 This repository contains the codebase for an end-to-end data engineering, ETL, and analytics capstone project focused on the Indian Mutual Fund industry. It ingests official AMFI (Association of Mutual Funds in India) datasets, processes them into a normalized SQLite Star Schema, and performs comprehensive exploratory data analysis (EDA).
 
 ## Project Overview
