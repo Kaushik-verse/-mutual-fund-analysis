@@ -33,7 +33,7 @@ st.title("Bluestock Mutual Fund Analytics Platform")
 @st.cache_data
 def load_data():
     # Adjust path if running inside dashboard/ folder
-    db_path = '../bluestock_mf.db' if os.path.exists('../bluestock_mf.db') else 'bluestock_mf.db'
+    db_path = os.path.join(os.path.dirname(__file__), '.., 'data', 'db', 'bluestock_mf.db')
     conn = sqlite3.connect(db_path)
     
     df_fund = pd.read_sql("SELECT * FROM dim_fund", conn)
