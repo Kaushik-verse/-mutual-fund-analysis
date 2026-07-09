@@ -2,3 +2,5 @@ venv/
 .DS_Store
 __pycache__/
 *.db
+# Allow the project database for Streamlit Cloud deployment
+!data/db/bluestock_mf.db
