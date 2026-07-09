@@ -1,3 +1,13 @@
+"""
+db_load.py — Step 3: SQLite Star Schema Loader.
+
+Initializes the database using schema.sql DDL, then maps each
+processed CSV to its corresponding fact/dimension table via
+SQLAlchemy. Generates dim_date dynamically. Verifies row counts.
+
+Author: Kaushik
+"""
+
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlite3
@@ -8,7 +18,9 @@ BASE_DIR = Path(__file__).parent.parent
 DB_PATH = BASE_DIR / "data/db/bluestock_mf.db"
 PROC_DIR = BASE_DIR / "data/processed"
 
+
 def init_db():
+    """Create/reset the SQLite database from schema.sql DDL statements."""
     print("Initializing Database with schema.sql...")
     conn = sqlite3.connect(DB_PATH)
     with open(BASE_DIR / 'sql/schema.sql', 'r') as f:

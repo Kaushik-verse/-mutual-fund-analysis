@@ -1,3 +1,13 @@
+"""
+etl_pipeline.py — Step 1: Data Ingestion.
+
+Discovers and copies all CSV datasets from the source directory
+into the project's data/raw/ staging area, then prints a summary
+of each file's shape, data types, and first two rows for validation.
+
+Author: Kaushik
+"""
+
 import pandas as pd
 import glob
 import os
@@ -8,7 +18,9 @@ BASE_DIR = Path(__file__).parent.parent
 SOURCE_DIR = "/Users/manivannan/Downloads/bluestock_mf_datasets"
 DEST_DIR = BASE_DIR / "data/raw"
 
+
 def ingest_data():
+    """Copy all CSV files from SOURCE_DIR into the project raw data folder."""
     print(f"Ingesting datasets from {SOURCE_DIR} to {DEST_DIR}...")
     os.makedirs(DEST_DIR, exist_ok=True)
     

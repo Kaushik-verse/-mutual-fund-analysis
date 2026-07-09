@@ -1,3 +1,15 @@
+"""
+clean_data.py — Step 2: Data Cleaning & Normalization.
+
+Applies domain-specific cleaning rules to critical datasets:
+  - NAV History: forward-fill missing dates, remove duplicates and invalid NAVs.
+  - Investor Transactions: validate amounts, standardize types, filter KYC.
+  - Scheme Performance: coerce numeric returns, filter expense ratios.
+All other files are copied as-is from raw/ to processed/.
+
+Author: Kaushik
+"""
+
 import pandas as pd
 import os
 import shutil
@@ -8,7 +20,9 @@ BASE_DIR = Path(__file__).parent.parent
 RAW_DIR = BASE_DIR / "data/raw"
 PROC_DIR = BASE_DIR / "data/processed"
 
+
 def clean_nav_history():
+    """Clean NAV history: parse dates, deduplicate, forward-fill missing days."""
     print("Cleaning nav_history...")
     df = pd.read_csv(os.path.join(RAW_DIR, "02_nav_history.csv"))
     

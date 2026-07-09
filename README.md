@@ -2,57 +2,93 @@
 
 **Author:** Kaushik
 
-This repository contains the codebase for an end-to-end data engineering, ETL, and analytics capstone project focused on the Indian Mutual Fund industry. It ingests official AMFI (Association of Mutual Funds in India) datasets, processes them into a normalized SQLite Star Schema, and performs comprehensive exploratory data analysis (EDA).
+A comprehensive, end-to-end data engineering, ETL, and quantitative analytics capstone project focused on the Indian Mutual Fund industry. It ingests 10 official AMFI datasets (580,000+ records), processes them into a normalized 5-table SQLite Star Schema, computes institutional-grade risk metrics, and delivers interactive visualizations through a Streamlit dashboard.
+
+---
 
 ## Project Overview
 
-Despite the massive growth of India's mutual fund industry (managing over ₹81 lakh crore in AUM), investors often struggle to make data-driven fund selection decisions due to fragmented data. This project solves this by:
-1. Consolidating fragmented data (NAV, AUM, SIP flows, Portfolio Holdings) into a single SQLite database.
-2. Cleaning and standardizing the data.
-3. Providing deep analytical insights and visualizations regarding fund performance, investor demographics, and macro-industry trends.
+The Indian mutual fund industry manages over INR 81 Lakh Crore in AUM across 1,900+ schemes and 26 Crore investor folios. Despite this massive scale, critical data remains fragmented across AMFI disclosures, AMC factsheets, and brokerage platforms. This project bridges that gap by:
+
+1. **Automating data ingestion** of 10 heterogeneous CSV datasets into a staging layer.
+2. **Cleaning and normalizing** data (forward-fill for missing NAV dates, deduplication, outlier removal).
+3. **Loading into a Star Schema** SQLite database optimized for analytical queries.
+4. **Computing 6 quantitative metrics** (CAGR, Sharpe, Sortino, Alpha, Beta, Max Drawdown) for all 40 schemes.
+5. **Advanced analytics** including VaR, CVaR, HHI concentration, investor cohort modeling, and SIP churn detection.
+6. **Interactive Streamlit dashboard** with 4 pages, dynamic slicers, and Plotly visualizations.
+7. **Bonus challenges** — Cron automation, Monte Carlo simulation, Markowitz optimization, automated email reports.
+
+---
 
 ## Datasets
 
-The project utilizes 10 core datasets containing simulated but highly realistic Indian mutual fund data (anchored to true historical NAVs and AUMs):
-1. **Fund Master**: Scheme metadata (Category, Benchmark, Expense Ratio).
-2. **NAV History**: Daily NAVs for 40 real schemes (Jan 2022 - May 2026).
-3. **AUM by Fund House**: Quarterly AUM totals for top AMCs.
-4. **Monthly SIP Inflows**: Macro industry SIP volume and AUM.
-5. **Category Inflows**: Net inflows by fund category (Large Cap, Mid Cap, etc.).
-6. **Industry Folio Count**: Growth of investor accounts (folios).
-7. **Scheme Performance**: Trailing returns, Alpha, Beta, Sharpe, and Drawdowns.
-8. **Investor Transactions**: Over 32,000 simulated transactions with geographic and demographic data.
-9. **Portfolio Holdings**: Equity sector allocations and stock weights.
-10. **Benchmark Indices**: Daily closing values for Nifty 50, Nifty 100, etc.
+| # | File | Rows | Description |
+|---|------|------|-------------|
+| 1 | `01_fund_master.csv` | 40 | Scheme metadata, category, benchmark, expense ratio, risk grade |
+| 2 | `02_nav_history.csv` | ~540K | Daily NAVs for 40 schemes (Jan 2022 - May 2026) |
+| 3 | `03_aum_by_fund_house.csv` | ~200 | Quarterly AUM for top 10 AMCs |
+| 4 | `04_monthly_sip_inflows.csv` | ~48 | Monthly macro SIP volume and industry AUM |
+| 5 | `05_category_inflows.csv` | ~120 | Net inflows by fund category |
+| 6 | `06_industry_folio_count.csv` | ~48 | Monthly investor folio growth |
+| 7 | `07_scheme_performance.csv` | 40 | Trailing returns, Alpha, Beta, Sharpe, Drawdowns |
+| 8 | `08_investor_transactions.csv` | 32K+ | SIP/Lumpsum/Redemption with demographics |
+| 9 | `09_portfolio_holdings.csv` | ~800 | Sector allocations and stock weights |
+| 10 | `10_benchmark_indices.csv` | ~2200 | Nifty 50, Nifty 100, Nifty Midcap 150 daily closes |
+
+---
 
 ## Project Structure
 
 ```
 .
-├── data/
-│   ├── raw/               # Original CSV files ingested during Day 1
-│   └── processed/         # Cleaned, standardized CSVs ready for DB load
-├── notebooks/
-│   ├── EDA_Analysis.ipynb         # 10+ Plotly/Seaborn charts
-│   └── Performance_Analytics.ipynb# Risk models and Fund Scorecards
-│   └── Advanced_Analytics.ipynb   # VaR, Cohort Analysis, HHI
-├── reports/
-│   ├── charts/                    # PNG exports of all visualizations
-│   └── data/                      # CSV exports (scorecard, var, etc.)
-├── dashboard/
-│   └── app.py                     # Streamlit Interactive Dashboard
-├── sql/
-│   ├── schema.sql                 # DDL statements for the 5-table Star Schema
-│   └── queries.sql                # 10 complex analytical SQL queries
-├── data_ingestion.py              # Script to ingest raw datasets
-├── clean_data.py                  # ETL script to clean datasets
-├── db_load.py                     # SQLAlchemy script to map processed CSVs to SQLite
-├── generate_day4.py               # Notebook generator for Day 4
-├── generate_day6.py               # Notebook generator for Day 6
-├── recommender.py                 # CLI Fund Recommender
-├── data_dictionary.md             # Database schema documentation
-└── requirements.txt               # Python dependencies
+├── run_pipeline.py                 # Master orchestration script
+├── requirements.txt                # Python dependencies
+├── README.md                       # This file
+├── data_dictionary.md              # Database schema documentation
+│
+├── scripts/                        # All Python ETL & utility scripts
+│   ├── README.md                   # Scripts documentation
+│   ├── etl_pipeline.py             # Step 1: Data ingestion
+│   ├── clean_data.py               # Step 2: Data cleaning & normalization
+│   ├── db_load.py                  # Step 3: SQLite Star Schema loader
+│   ├── compute_metrics.py          # Step 4: Performance metric computation
+│   ├── recommender.py              # CLI fund recommendation engine
+│   ├── live_nav_fetch.py           # Live NAV fetcher (mfapi.in)
+│   ├── schedule_cron.sh            # Bonus B1: Cron job setup
+│   ├── email_report.py             # Bonus B5: Automated HTML email
+│   ├── generate_report.py          # Final Report PDF generator
+│   └── generate_presentation.py    # Presentation PPTX generator
+│
+├── notebooks/                      # Jupyter analysis notebooks
+│   ├── README.md                   # Notebooks documentation
+│   ├── 01_data_ingestion.ipynb     # Data ingestion walkthrough
+│   ├── 02_data_cleaning.ipynb      # Data cleaning walkthrough
+│   ├── 03_eda_analysis.ipynb       # 10+ Plotly/Seaborn EDA charts
+│   ├── 04_performance_analytics.ipynb  # Risk models & Fund Scorecards
+│   └── 05_advanced_analytics.ipynb # VaR, Cohort, HHI, Monte Carlo, Markowitz
+│
+├── dashboard/                      # Streamlit web application
+│   ├── README.md                   # Dashboard documentation
+│   └── app.py                      # 4-page interactive dashboard
+│
+├── data/                           # Data directory (not committed to Git)
+│   ├── README.md                   # Data documentation
+│   ├── raw/                        # Original CSV files
+│   ├── processed/                  # Cleaned CSVs
+│   └── db/                         # SQLite database (bluestock_mf.db)
+│
+├── reports/                        # Generated outputs
+│   ├── Final_Report.pdf            # Comprehensive capstone report (15+ pages)
+│   ├── Bluestock_MF_Presentation.pptx  # 12-slide presentation deck
+│   ├── charts/                     # PNG exports of all visualizations
+│   └── data/                       # CSV exports (scorecard, VaR, etc.)
+│
+└── sql/                            # SQL assets
+    ├── schema.sql                  # DDL for Star Schema creation
+    └── queries.sql                 # 10 complex analytical queries
 ```
+
+---
 
 ## Setup & Installation
 
@@ -62,10 +98,11 @@ The project utilizes 10 core datasets containing simulated but highly realistic 
    cd -mutual-fund-analysis
    ```
 
-2. **Set up a virtual environment:**
+2. **Create a virtual environment:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   python3 -m venv venv
+   source venv/bin/activate    # macOS/Linux
+   # venv\Scripts\activate     # Windows
    ```
 
 3. **Install dependencies:**
@@ -73,60 +110,98 @@ The project utilizes 10 core datasets containing simulated but highly realistic 
    pip install -r requirements.txt
    ```
 
-## Execution Workflow
+---
 
-1. **Day 1: Data Ingestion**
-   ```bash
-   python data_ingestion.py
-   ```
-   *Copies source datasets into `data/raw/`.*
+## How to Run
 
-2. **Day 2: Data Cleaning & Database Load**
-   ```bash
-   python clean_data.py
-   python db_load.py
-   ```
-   *Cleans the raw data and builds the `bluestock_mf.db` SQLite database.*
+### Option A: Full Pipeline (Recommended)
+```bash
+python run_pipeline.py
+```
+This executes: Ingestion -> Cleaning -> DB Load -> Metrics -> PDF & PPTX generation.
 
-3. **Day 2: SQL Analytics**
-   ```bash
-   sqlite3 bluestock_mf.db < queries.sql
-   ```
-   *Executes pre-built analytical queries against the Star Schema.*
+### Option B: Individual Steps
+```bash
+# ETL only (Steps 1-3)
+python run_pipeline.py --etl
 
-4. **Day 3: Exploratory Data Analysis**
-   Launch Jupyter Notebook to view the charts:
-   ```bash
-   jupyter notebook notebooks/EDA_Analysis.ipynb
-   ```
+# Analytics only (Step 4)
+python run_pipeline.py --analytics
 
-5. **Day 4: Fund Performance Analytics**
-   ```bash
-   jupyter notebook notebooks/Performance_Analytics.ipynb
-   ```
+# Reports only (Step 5)
+python run_pipeline.py --report
+```
 
-6. **Day 5: Interactive Dashboard Deployment**
-   Launch the Streamlit web dashboard:
-   ```bash
-   streamlit run dashboard/app.py
-   ```
+### Option C: Manual Step-by-Step
+```bash
+python scripts/etl_pipeline.py        # Step 1: Ingest raw CSVs
+python scripts/clean_data.py          # Step 2: Clean & normalize
+python scripts/db_load.py             # Step 3: Load into SQLite
+python scripts/compute_metrics.py     # Step 4: Generate metrics notebook
+python scripts/generate_report.py     # Step 5a: Generate PDF report
+python scripts/generate_presentation.py  # Step 5b: Generate PPTX
+```
 
-7. **Day 6: Advanced Analytics & Models**
-   ```bash
-   jupyter notebook notebooks/Advanced_Analytics.ipynb
-   ```
-   Run the CLI Fund Recommender:
-   ```bash
-   python recommender.py
-   ```
+### Launch the Dashboard
+```bash
+streamlit run dashboard/app.py
+```
 
-## Technologies Used
-- **Language**: Python 3
-- **Data Processing**: Pandas, NumPy
-- **Database**: SQLite3, SQLAlchemy
-- **Visualisation**: Plotly, Seaborn, Matplotlib
-- **Notebooks**: Jupyter Lab
-- **Version Control**: Git & GitHub
+### Run the Fund Recommender
+```bash
+python scripts/recommender.py          # Interactive prompt
+python scripts/recommender.py High     # CLI argument
+```
+
+### SQL Analytics
+```bash
+sqlite3 data/db/bluestock_mf.db < sql/queries.sql
+```
 
 ---
-*Disclaimer: All mutual fund NAVs and AUMs are based on publicly available AMFI data for educational purposes. Transactions are simulated for analytical demonstration. Mutual fund investments are subject to market risks.*
+
+## Key Metrics Computed
+
+| Metric | Formula | Purpose |
+|--------|---------|---------|
+| **CAGR** | `(NAV_end / NAV_start) ^ (252/N) - 1` | Annualized compounded returns |
+| **Sharpe Ratio** | `(Rp - Rf) / Std(Rp) x sqrt(252)` | Risk-adjusted return (Rf = 6.5%) |
+| **Sortino Ratio** | `(Rp - Rf) / Downside_Std x sqrt(252)` | Downside-only risk adjustment |
+| **Alpha** | OLS intercept x 252 | Excess return over benchmark |
+| **Beta** | OLS slope vs NIFTY 100 | Market volatility correlation |
+| **Max Drawdown** | `min(NAV / Running_Max - 1)` | Worst peak-to-trough decline |
+| **VaR (95%)** | 5th percentile of daily returns | Maximum expected daily loss |
+| **CVaR** | Mean of returns below VaR | Expected loss in worst 5% of days |
+| **HHI** | Sum of squared sector weights | Portfolio concentration index |
+
+---
+
+## Technologies Used
+
+| Category | Technologies |
+|----------|-------------|
+| **Language** | Python 3.13 |
+| **Data Processing** | Pandas, NumPy, SciPy |
+| **Database** | SQLite3, SQLAlchemy |
+| **Visualization** | Plotly, Seaborn, Matplotlib |
+| **Dashboard** | Streamlit |
+| **Reports** | fpdf2, python-pptx |
+| **Automation** | Cron (bash), smtplib |
+| **Notebooks** | Jupyter Lab, jupytext |
+| **Version Control** | Git & GitHub |
+
+---
+
+## Bonus Challenges Completed (+50 marks)
+
+| # | Challenge | Implementation |
+|---|-----------|---------------|
+| B1 | Cron Job Automation | `scripts/schedule_cron.sh` — weekday 8 PM NAV fetch |
+| B2 | Streamlit Web App | `dashboard/app.py` — 4-page interactive dashboard |
+| B3 | Monte Carlo Simulation | `05_advanced_analytics.ipynb` — 5-year NAV projections |
+| B4 | Markowitz Optimization | `05_advanced_analytics.ipynb` — Efficient Frontier |
+| B5 | Email Report Generator | `scripts/email_report.py` — automated HTML summaries |
+
+---
+
+*Disclaimer: NAVs and AUMs are based on publicly available AMFI data for educational purposes. Transactions are simulated for analytical demonstration. Mutual fund investments are subject to market risks.*

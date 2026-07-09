@@ -1,8 +1,19 @@
+"""
+live_nav_fetch.py — Fetches real-time NAV data from mfapi.in REST API.
+
+Used by the cron automation (schedule_cron.sh) to keep the database
+synchronized with live market closes for 6 key large-cap schemes.
+
+Author: Kaushik
+"""
+
 import pandas as pd
 import requests
 import os
 
+
 def fetch_and_save_nav(scheme_code, filename):
+    """Fetch live NAV for a given AMFI scheme code and save to CSV."""
     print(f"Fetching live NAV for scheme {scheme_code}...")
     url = f"https://api.mfapi.in/mf/{scheme_code}"
     response = requests.get(url)

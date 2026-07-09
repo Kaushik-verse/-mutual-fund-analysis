@@ -1,3 +1,13 @@
+"""
+email_report.py — Bonus B5: Automated HTML Email Report Generator.
+
+Queries the top 5 performing funds from the SQLite database,
+constructs a styled HTML table with Bluestock branding, and
+transmits the weekly performance summary via SMTP.
+
+Author: Kaushik
+"""
+
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText

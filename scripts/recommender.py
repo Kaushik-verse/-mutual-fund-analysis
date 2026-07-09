@@ -1,3 +1,13 @@
+"""
+recommender.py — CLI Fund Recommendation Engine.
+
+Accepts a risk appetite (Low / Moderate / High) and returns the
+top 3 mutual funds ranked by Sharpe Ratio within the matching
+SEBI risk category. Can be used interactively or via CLI argument.
+
+Author: Kaushik
+"""
+
 import pandas as pd
 import sqlite3
 import sys
