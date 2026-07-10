@@ -112,6 +112,25 @@ def generate_pdf():
     pdf.cell(0, 7, 'Bluestock Fintech | Data Engineering Capstone', align='C',
              new_x="LMARGIN", new_y="NEXT")
     pdf.cell(0, 7, 'July 2026', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(15)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(50, pdf.get_y(), 160, pdf.get_y())
+    pdf.ln(8)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_text_color(12, 35, 64)
+    pdf.cell(0, 6, 'Live Dashboard:', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font('helvetica', '', 10)
+    pdf.set_text_color(0, 102, 204)
+    pdf.cell(0, 6, 'https://mutual-fund-analysis-kaushik.streamlit.app/', align='C',
+             new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
+    pdf.set_font('helvetica', 'B', 10)
+    pdf.set_text_color(12, 35, 64)
+    pdf.cell(0, 6, 'GitHub Repository:', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font('helvetica', '', 10)
+    pdf.set_text_color(0, 102, 204)
+    pdf.cell(0, 6, 'https://github.com/Kaushik-verse/-mutual-fund-analysis', align='C',
+             new_x="LMARGIN", new_y="NEXT")
 
     # ==================== TABLE OF CONTENTS ====================
     pdf.add_page()
@@ -129,6 +148,7 @@ def generate_pdf():
         ("10", "Bonus Challenges Implemented", "15"),
         ("11", "Key Findings & Recommendations", "16"),
         ("12", "Limitations & Future Scope", "17"),
+        ("13", "Thank You", "18"),
     ]
     for num, title, page in toc:
         pdf.set_font('helvetica', '', 11)
@@ -442,9 +462,16 @@ def generate_pdf():
     pdf.add_page()
     pdf.section_title(9, 'Interactive Dashboard Design')
     pdf.body(
-        "A 4-page interactive Streamlit web application was deployed as an alternative to Power BI "
+        "A 6-page interactive Streamlit web application was deployed as an alternative to Power BI "
         "(which lacks native macOS support). The dashboard directly queries the SQLite Star Schema "
         "via cached dataframes for zero-latency interactivity."
+    )
+    pdf.sub_title('Live Deployment')
+    pdf.body(
+        "The dashboard has been deployed to Streamlit Cloud and is publicly accessible at:\n"
+        "https://mutual-fund-analysis-kaushik.streamlit.app/\n\n"
+        "Source code is available on GitHub at:\n"
+        "https://github.com/Kaushik-verse/-mutual-fund-analysis"
     )
     pdf.sub_title('Page 1: Industry Overview')
     pdf.body(
@@ -557,10 +584,41 @@ def generate_pdf():
     pdf.bullet("Add NLP-based sentiment analysis on AMC factsheets to predict AUM flow trends.")
     pdf.bullet("Build a mobile-responsive React frontend for consumer-facing fund comparison tools.")
 
+    # ==================== 13. THANK YOU ====================
+    pdf.add_page()
+    pdf.ln(50)
+    pdf.set_font('helvetica', 'B', 30)
+    pdf.set_text_color(12, 35, 64)
+    pdf.cell(0, 15, 'Thank You', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
+    pdf.set_draw_color(212, 175, 55)
+    pdf.set_line_width(1)
+    pdf.line(60, pdf.get_y(), 150, pdf.get_y())
+    pdf.ln(10)
+    pdf.set_font('helvetica', '', 14)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(0, 8, 'Bluestock Mutual Fund Analytics Capstone Project', align='C',
+             new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, 'Author: Kaushik', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(15)
+    pdf.set_font('helvetica', '', 11)
+    pdf.set_text_color(0, 102, 204)
+    pdf.cell(0, 7, 'Live Dashboard: https://mutual-fund-analysis-kaushik.streamlit.app/',
+             align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 7, 'GitHub: https://github.com/Kaushik-verse/-mutual-fund-analysis',
+             align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(15)
+    pdf.set_font('helvetica', 'I', 11)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(0, 7, 'All 5 Bonus Challenges Successfully Completed',
+             align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 7, 'July 2026',
+             align='C', new_x="LMARGIN", new_y="NEXT")
+
     # ==================== GENERATE ====================
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     pdf.output(REPORT_DIR / 'Final_Report.pdf')
-    print("Generated comprehensive Final_Report.pdf (15+ pages)")
+    print("Generated comprehensive Final_Report.pdf with Thank You page")
 
 
 if __name__ == "__main__":
